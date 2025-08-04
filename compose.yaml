@@ -1,34 +1,28 @@
 services:
-  # Swetrix user interface application
+  # This is Swetrix user interface application, it's used to display the analytics data, render charts, etc.
   swetrix:
     image: swetrix/swetrix-fe:v3.3.1
     restart: always
     depends_on:
       - swetrix-api
+    ports:
+      - '80:3000'
     environment:
-      # A API_URL agora usa a variável dinâmica.
-      - API_URL=https://${API_DOMAIN}
+      - API_URL=${API_URL}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ping || exit 1"]
       interval: 30s
       start_period: 15s
-    networks:
-      - swetrix_internal
-      - coolify
-    labels:
-      - "traefik.enable=true"
-      # O domínio do frontend agora é dinâmico.
-      - "traefik.http.routers.swetrix.rule=Host(`${FRONTEND_DOMAIN}`)"
-      - "traefik.http.routers.swetrix.entrypoints=websecure"
-      - "traefik.http.routers.swetrix.tls.certresolver=letsencrypt"
-      - "traefik.http.services.swetrix.loadbalancer.server.port=3000"
 
-  # Swetrix API
+  # This is Swetrix API, it's purpose is to collect incoming analytical events and serve the data to the UI
   swetrix-api:
     image: swetrix/swetrix-api:v3.3.1
     restart: always
     container_name: swetrix-api
+    ports:
+      - '8080:5005'
     environment:
+      # Configurable with .env file
       - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET}
       - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET}
       - EMAIL=${EMAIL}
@@ -37,8 +31,13 @@ services:
       - IP_GEOLOCATION_DB_PATH=${IP_GEOLOCATION_DB_PATH}
       - DEBUG_MODE=${DEBUG_MODE}
       - CLOUDFLARE_PROXY_ENABLED=${CLOUDFLARE_PROXY_ENABLED}
+
+      # Redis and Clickhouse are required for the API to work
       - REDIS_HOST=redis
       - CLICKHOUSE_HOST=http://clickhouse
+    links:
+      - 'redis'
+      - 'clickhouse'
     depends_on:
       redis:
         condition: service_healthy
@@ -48,16 +47,6 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5005/ping || exit 1"]
       interval: 30s
       start_period: 15s
-    networks:
-      - swetrix_internal
-      - coolify
-    labels:
-      - "traefik.enable=true"
-      # O domínio da API agora é dinâmico.
-      - "traefik.http.routers.swetrix-api.rule=Host(`${API_DOMAIN}`)"
-      - "traefik.http.routers.swetrix-api.entrypoints=websecure"
-      - "traefik.http.routers.swetrix-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.swetrix-api.loadbalancer.server.port=5005"
 
   redis:
     image: redis:7.2-alpine
@@ -70,8 +59,6 @@ services:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 30s
       start_period: 1m
-    networks:
-      - swetrix_internal
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.10-alpine
@@ -90,24 +77,17 @@ services:
       - SYS_NICE
     volumes:
       - swetrix-events-data:/var/lib/clickhouse
+      # Disable logging
       - ./clickhouse/reduce-logs.xml:/etc/clickhouse-server/config.d/reduce-logs.xml:ro
       - ./clickhouse/disable-user-logging.xml:/etc/clickhouse-server/users.d/disable-user-logging.xml:ro
+
+      # Reduce RAM usage
       - ./clickhouse/preserve-ram-config.xml:/etc/clickhouse-server/config.d/preserve-ram-config.xml:ro
       - ./clickhouse/preserve-ram-user.xml:/etc/clickhouse-server/users.d/preserve-ram-user.xml:ro
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
-    networks:
-      - swetrix_internal
-
 volumes:
   swetrix-events-data:
     driver: local
-
-networks:
-  swetrix_internal:
-    driver: bridge
-  coolify:
-    name: coolify
-    external: true
