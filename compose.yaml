@@ -13,6 +13,8 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ping || exit 1"]
       interval: 30s
       start_period: 15s
+    networks:
+      - swetrix_internal
 
   # This is Swetrix API, it's purpose is to collect incoming analytical events and serve the data to the UI
   swetrix-api:
@@ -47,6 +49,8 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5005/ping || exit 1"]
       interval: 30s
       start_period: 15s
+    networks:
+      - swetrix_internal
 
   redis:
     image: redis:7.2-alpine
@@ -59,6 +63,8 @@ services:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 30s
       start_period: 1m
+    networks:
+      - swetrix_internal
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.10-alpine
