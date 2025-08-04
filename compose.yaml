@@ -9,6 +9,11 @@ services:
       - '85:3000'
     networks:
       - coolify
+    labels:
+      - "coolify.managed=true"
+      - "coolify.name=swetrix"
+      - "coolify.http.routers.swetrix.rule=Host(`${FRONTEND_DOMAIN:-localhost}`)"
+      - "coolify.http.services.swetrix.loadbalancer.server.port=3000"
     environment:
       - API_URL=${API_URL}
     healthcheck:
@@ -25,6 +30,11 @@ services:
       - '8085:5005'
     networks:
       - coolify
+    labels:
+      - "coolify.managed=true"
+      - "coolify.name=swetrix-api"
+      - "coolify.http.routers.swetrix-api.rule=Host(`${API_DOMAIN:-localhost}`)"
+      - "coolify.http.services.swetrix-api.loadbalancer.server.port=5005"
     environment:
       # Configurable with .env file
       - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET}
