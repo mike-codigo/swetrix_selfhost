@@ -1,14 +1,14 @@
 services:
-  # This is Swetrix user interface application, it's used to display the analytics data, render charts, etc.
+  # Swetrix user interface application
   swetrix:
     image: swetrix/swetrix-fe:v3.3.1
     restart: always
     depends_on:
       - swetrix-api
-    ports:
-      - '85:3000'
+    # A seção 'ports' foi REMOVIDA.
     environment:
-      - API_URL=${API_URL}
+      # A API_URL agora usa a variável dinâmica.
+      - API_URL=https://${API_DOMAIN}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ping || exit 1"]
       interval: 30s
@@ -17,15 +17,13 @@ services:
       - swetrix_internal
       - coolify
 
-  # This is Swetrix API, it's purpose is to collect incoming analytical events and serve the data to the UI
+  # Swetrix API
   swetrix-api:
     image: swetrix/swetrix-api:v3.3.1
     restart: always
     container_name: swetrix-api
-    ports:
-      - '8085:5005'
+    # A seção 'ports' foi REMOVIDA.
     environment:
-      # Configurable with .env file
       - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET}
       - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET}
       - EMAIL=${EMAIL}
@@ -34,13 +32,8 @@ services:
       - IP_GEOLOCATION_DB_PATH=${IP_GEOLOCATION_DB_PATH}
       - DEBUG_MODE=${DEBUG_MODE}
       - CLOUDFLARE_PROXY_ENABLED=${CLOUDFLARE_PROXY_ENABLED}
-
-      # Redis and Clickhouse are required for the API to work
       - REDIS_HOST=redis
       - CLICKHOUSE_HOST=http://clickhouse
-    links:
-      - 'redis'
-      - 'clickhouse'
     depends_on:
       redis:
         condition: service_healthy
@@ -85,11 +78,8 @@ services:
       - SYS_NICE
     volumes:
       - swetrix-events-data:/var/lib/clickhouse
-      # Disable logging
       - ./clickhouse/reduce-logs.xml:/etc/clickhouse-server/config.d/reduce-logs.xml:ro
       - ./clickhouse/disable-user-logging.xml:/etc/clickhouse-server/users.d/disable-user-logging.xml:ro
-
-      # Reduce RAM usage
       - ./clickhouse/preserve-ram-config.xml:/etc/clickhouse-server/config.d/preserve-ram-config.xml:ro
       - ./clickhouse/preserve-ram-user.xml:/etc/clickhouse-server/users.d/preserve-ram-user.xml:ro
     ulimits:
@@ -98,9 +88,11 @@ services:
         hard: 262144
     networks:
       - swetrix_internal
+
 volumes:
   swetrix-events-data:
     driver: local
+
 networks:
   swetrix_internal:
     driver: bridge
