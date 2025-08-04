@@ -5,8 +5,7 @@ services:
     restart: always
     depends_on:
       - swetrix-api
-    ports:
-      - '85:3000'
+    # Remova o mapeamento de porta - deixe o Coolify gerenciar
     environment:
       - API_URL=${API_URL}
     healthcheck:
@@ -14,13 +13,12 @@ services:
       interval: 30s
       start_period: 15s
 
-  # This is Swetrix API, it's purpose is to collect incoming analytical events and serve the data to the UI
+  # This is Swetrix API, it's purpose is to collect incoming analytical events and serve the data to the UI  
   swetrix-api:
     image: swetrix/swetrix-api:v3.3.1
     restart: always
     container_name: swetrix-api
-    ports:
-      - '8085:5005'
+    # Remova o mapeamento de porta - deixe o Coolify gerenciar
     environment:
       # Configurable with .env file
       - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET}
@@ -31,7 +29,6 @@ services:
       - IP_GEOLOCATION_DB_PATH=${IP_GEOLOCATION_DB_PATH}
       - DEBUG_MODE=${DEBUG_MODE}
       - CLOUDFLARE_PROXY_ENABLED=${CLOUDFLARE_PROXY_ENABLED}
-
       # Redis and Clickhouse are required for the API to work
       - REDIS_HOST=redis
       - CLICKHOUSE_HOST=http://clickhouse
@@ -80,7 +77,6 @@ services:
       # Disable logging
       - ./clickhouse/reduce-logs.xml:/etc/clickhouse-server/config.d/reduce-logs.xml:ro
       - ./clickhouse/disable-user-logging.xml:/etc/clickhouse-server/users.d/disable-user-logging.xml:ro
-
       # Reduce RAM usage
       - ./clickhouse/preserve-ram-config.xml:/etc/clickhouse-server/config.d/preserve-ram-config.xml:ro
       - ./clickhouse/preserve-ram-user.xml:/etc/clickhouse-server/users.d/preserve-ram-user.xml:ro
@@ -88,6 +84,7 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+
 volumes:
   swetrix-events-data:
     driver: local
