@@ -15,6 +15,7 @@ services:
       start_period: 15s
     networks:
       - swetrix_internal
+      - coolify
 
   # This is Swetrix API, it's purpose is to collect incoming analytical events and serve the data to the UI
   swetrix-api:
@@ -51,6 +52,7 @@ services:
       start_period: 15s
     networks:
       - swetrix_internal
+      - coolify
 
   redis:
     image: redis:7.2-alpine
