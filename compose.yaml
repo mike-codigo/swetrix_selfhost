@@ -16,6 +16,13 @@ services:
     networks:
       - swetrix_internal
       - coolify
+    labels:
+      - "traefik.enable=true"
+      # O domínio do frontend agora é dinâmico.
+      - "traefik.http.routers.swetrix.rule=Host(`${FRONTEND_DOMAIN}`)"
+      - "traefik.http.routers.swetrix.entrypoints=websecure"
+      - "traefik.http.routers.swetrix.tls.certresolver=letsencrypt"
+      - "traefik.http.services.swetrix.loadbalancer.server.port=3000"
 
   # Swetrix API
   swetrix-api:
@@ -46,6 +53,12 @@ services:
     networks:
       - swetrix_internal
       - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.swetrix-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.swetrix-api.entrypoints=websecure"
+      - "traefik.http.routers.swetrix-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.swetrix-api.loadbalancer.server.port=5005"
 
   redis:
     image: redis:7.2-alpine
