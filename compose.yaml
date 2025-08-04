@@ -102,6 +102,6 @@ volumes:
 networks:
   swetrix_internal:
     driver: bridge
-  coolify_traefik_proxy:
+  coolify:
     name: coolify
     external: true
